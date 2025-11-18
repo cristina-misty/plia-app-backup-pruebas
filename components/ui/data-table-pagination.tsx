@@ -29,6 +29,7 @@ interface DataTablePaginationProps<TData> {
   pageSizeOptions?: number[];
   neighbors?: number; // how many pages to show around current
   showPageInfo?: boolean;
+  showSelectionInfo?: boolean;
 }
 
 export function DataTablePagination<TData>({
@@ -39,9 +40,12 @@ export function DataTablePagination<TData>({
   pageSizeOptions = [5, 25, 50, 100, 500],
   neighbors = 1,
   showPageInfo = true,
+  showSelectionInfo = true,
 }: DataTablePaginationProps<TData>) {
   const pageCount = table.getPageCount();
   const current = table.getState().pagination.pageIndex + 1; // 1-based index
+  const selectedRows = table.getFilteredSelectedRowModel().rows.length;
+  const totalRows = table.getFilteredRowModel().rows.length;
 
   // Build numbered pages with ellipsis
   const range = React.useMemo<(number | "ellipsis")[]>(() => {
@@ -69,6 +73,11 @@ export function DataTablePagination<TData>({
       className={cn("flex w-full items-center justify-start gap-8", className)}
     >
       <div className="flex w-full items-center gap-4 lg:w-fit">
+        {showSelectionInfo && (
+          <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
+            {selectedRows} of {totalRows} row(s) selected.
+          </div>
+        )}
         {showPageInfo && (
           <div className="flex w-full items-center justify-center text-sm font-medium">
             Page {current} of {pageCount}

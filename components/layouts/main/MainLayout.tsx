@@ -1,6 +1,6 @@
-import { AppSidebar } from "@/components/app-sidebar";
+import { AppSidebar } from "@/components/shadcn/app-sidebar";
 import { ChatRoundedButton } from "@/components/chatbot/ChatRoundedButton";
-import { SiteHeader } from "@/components/site-header";
+import { SiteHeader } from "@/components/shadcn/site-header";
 
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
