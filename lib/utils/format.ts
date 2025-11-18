@@ -23,7 +23,13 @@ export function formatDateAndTime(
     dateStyle?: Intl.DateTimeFormatOptions["dateStyle"];
     timeStyle?: Intl.DateTimeFormatOptions["timeStyle"];
   }
-): { dateText: string; timeText: string | null; iso: string | null; date: Date | null; valid: boolean } {
+): {
+  dateText: string;
+  timeText: string | null;
+  iso: string | null;
+  date: Date | null;
+  valid: boolean;
+} {
   const dateStyle = opts?.dateStyle ?? "medium";
   const timeStyle = opts?.timeStyle ?? "short";
 
@@ -40,11 +46,21 @@ export function formatDateAndTime(
   }
 
   if (!date || isNaN(date.getTime())) {
-    return { dateText: "—", timeText: null, iso: null, date: null, valid: false };
+    return {
+      dateText: "—",
+      timeText: null,
+      iso: null,
+      date: null,
+      valid: false,
+    };
   }
 
-  const dateText = new Intl.DateTimeFormat(undefined, { dateStyle }).format(date);
-  const timeText = new Intl.DateTimeFormat(undefined, { timeStyle }).format(date);
+  const dateText = new Intl.DateTimeFormat(undefined, { dateStyle }).format(
+    date
+  );
+  const timeText = new Intl.DateTimeFormat(undefined, { timeStyle }).format(
+    date
+  );
   const iso = date.toISOString();
 
   return { dateText, timeText, iso, date, valid: true };
@@ -161,15 +177,24 @@ export function filterScenesByEpisode<T extends { episode_order?: unknown }>(
   selected?: string | string[] | null
 ): T[] {
   const list = Array.isArray(items) ? items : [];
-  const selections = normalizeStringList(selected, { trim: true, unique: true, lowercaseForDedup: true });
+  const selections = normalizeStringList(selected, {
+    trim: true,
+    unique: true,
+    lowercaseForDedup: true,
+  });
   if (selections.length === 0 || selections.includes("all")) return list;
   const set = new Set(selections.map((s) => s.toLowerCase()));
-  return list.filter((item) => set.has(String((item as any)?.episode_order ?? "").toLowerCase()));
+  return list.filter((item) =>
+    set.has(String((item as any)?.episode_order ?? "").toLowerCase())
+  );
 }
 
 export function sumScreenTime<T extends { screen_time?: unknown }>(
   items: T[] | null | undefined
 ): number {
   const list = Array.isArray(items) ? items : [];
-  return list.reduce((acc, cur) => acc + parseToSeconds((cur as any)?.screen_time), 0);
+  return list.reduce(
+    (acc, cur) => acc + parseToSeconds((cur as any)?.screen_time),
+    0
+  );
 }

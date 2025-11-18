@@ -1,12 +1,12 @@
 import { SectionLayout } from "@/components/layouts/section/SectionLayout";
-import DataTableRender from "@/components/scenes/data-table/DataTableRender";
 
 import React from "react";
+import ScenesClient from "../../../components/scenes/table/ScenesClient";
 
 const Scenes = () => {
   return (
     <SectionLayout title="Scenes">
-      <DataTableRender />
+      <ScenesClient />
     </SectionLayout>
   );
 };

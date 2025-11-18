@@ -38,10 +38,11 @@ import {
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 import { DataTableColumnHeader } from "./DataTableColumnHeader";
-import { DataTableToolbar } from "./DataTableToolbar";
+
 import { createStore } from "zustand/vanilla";
 import { useStore } from "zustand";
 import { normalizeString } from "@/lib/utils/search";
+import { DataTableToolbar } from "./DataTableToolbar";
 
 type DiceTableState = {
   title: string;
@@ -73,7 +74,11 @@ export function DiceDataTable<TData extends { id: string }>({
 }: {
   data: TData[];
   columns: ColumnDef<TData, unknown>[];
-  availableStatuses?: { label: string; value: string; icon?: React.ComponentType }[];
+  availableStatuses?: {
+    label: string;
+    value: string;
+    icon?: React.ComponentType;
+  }[];
   searchEnabled?: boolean;
   statusEnabled?: boolean;
   getSearchHaystack?: (item: TData) => string | Array<unknown>;
@@ -203,14 +208,26 @@ export function DiceDataTable<TData extends { id: string }>({
         ? getSearchHaystack(item)
         : (item as any).title ?? (item as any).header ?? "";
       const haystack = Array.isArray(hay)
-        ? hay.filter(Boolean).map((x) => normalizeString(String(x))).join(" ")
+        ? hay
+            .filter(Boolean)
+            .map((x) => normalizeString(String(x)))
+            .join(" ")
         : normalizeString(String(hay));
       const matchesTitle = !searchEnabled || !t || haystack.includes(t);
       const itemStatus = (item as any)[statusKey as any];
-      const matchesStatus = !statusEnabled || status.length === 0 || status.includes(itemStatus);
+      const matchesStatus =
+        !statusEnabled || status.length === 0 || status.includes(itemStatus);
       return matchesTitle && matchesStatus;
     });
-  }, [data, title, status, getSearchHaystack, searchEnabled, statusEnabled, statusKey]);
+  }, [
+    data,
+    title,
+    status,
+    getSearchHaystack,
+    searchEnabled,
+    statusEnabled,
+    statusKey,
+  ]);
 
   const table = useReactTable({
     data: filtered,
@@ -267,15 +284,16 @@ export function DiceDataTable<TData extends { id: string }>({
                     }
                     className="capitalize"
                   >
-                    {((column.columnDef as any)?.meta?.label as string) || column.id}
+                    {((column.columnDef as any)?.meta?.label as string) ||
+                      column.id}
                   </DropdownMenuCheckboxItem>
                 ))}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
-      <div className="overflow-hidden rounded-lg border">
-        <Table>
+      <div className="w-full overflow-hidden rounded-lg border">
+        <Table className="table-fixed w-full">
           <TableHeader className="bg-muted">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -341,51 +359,12 @@ export function DiceDataTable<TData extends { id: string }>({
           </TableBody>
         </Table>
       </div>
-      <DataTablePagination table={table} showPageSize showSelectionInfo={false} pageSizeOptions={pageSizeOptions ?? [10, 20, 30, 40, 50]} />
+      <DataTablePagination
+        table={table}
+        showPageSize
+        showSelectionInfo={false}
+        pageSizeOptions={pageSizeOptions ?? [10, 25, 50, 100, 500]}
+      />
     </div>
   );
 }
-
-export const defaultColumns = <
-  TData extends { id: string; title?: string; status?: string }
->() =>
-  [
-    {
-      id: "title",
-      accessorKey: "title",
-      header: "Title",
-      cell: ({ cell }: any) => <div>{String(cell.getValue())}</div>,
-      meta: { label: "Title" },
-    },
-    {
-      id: "status",
-      accessorKey: "status",
-      header: "Status",
-      cell: ({ cell }: any) => (
-        <Badge variant="outline" className="capitalize">
-          {String(cell.getValue())}
-        </Badge>
-      ),
-      meta: { label: "Status" },
-    },
-    {
-      id: "actions",
-      cell: function Cell() {
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <MoreHorizontal className="h-4 w-4" />
-                <span className="sr-only">Open menu</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem>Edit</DropdownMenuItem>
-              <DropdownMenuItem>Make a copy</DropdownMenuItem>
-              <DropdownMenuItem>Favorite</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      },
-    },
-  ] as ColumnDef<TData, unknown>[];
