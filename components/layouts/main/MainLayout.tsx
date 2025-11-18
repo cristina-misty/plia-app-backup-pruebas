@@ -1,5 +1,7 @@
 import { AppSidebar } from "@/components/app-sidebar";
+import { ChatRoundedButton } from "@/components/chatbot/ChatRoundedButton";
 import { SiteHeader } from "@/components/site-header";
+
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 interface MainLayoutProps {
@@ -25,6 +27,14 @@ export function MainLayout({ children }: MainLayoutProps) {
           </div>
         </div>
       </SidebarInset>
+      {/* Solo visible en mobile */}
+
+      <ChatRoundedButton />
+
+      {/* Solo visible en desktop */}
+      {/*       <div className="hidden sm:block">
+        <ChatButtonModal />
+      </div> */}
     </SidebarProvider>
   );
 }
