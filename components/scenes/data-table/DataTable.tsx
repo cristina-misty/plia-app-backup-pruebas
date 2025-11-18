@@ -35,6 +35,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 import { DataTableColumnHeader } from "./DataTableColumnHeader";
 import { DataTableToolbar } from "./DataTableToolbar";
@@ -64,14 +65,20 @@ export function DiceDataTable<TData extends { id: string }>({
   data,
   columns,
   availableStatuses = [],
+  searchEnabled = true,
+  statusEnabled = true,
+  getSearchHaystack,
+  statusKey = "status",
+  pageSizeOptions,
 }: {
   data: TData[];
   columns: ColumnDef<TData, unknown>[];
-  availableStatuses?: {
-    label: string;
-    value: string;
-    icon?: React.ComponentType;
-  }[];
+  availableStatuses?: { label: string; value: string; icon?: React.ComponentType }[];
+  searchEnabled?: boolean;
+  statusEnabled?: boolean;
+  getSearchHaystack?: (item: TData) => string | Array<unknown>;
+  statusKey?: keyof TData | string;
+  pageSizeOptions?: number[];
 }) {
   const storeRef = React.useRef(
     createStore<DiceTableState>(() => ({
@@ -192,16 +199,18 @@ export function DiceDataTable<TData extends { id: string }>({
   const filtered = React.useMemo(() => {
     const t = normalizeString(title);
     return data.filter((item) => {
-      const matchesTitle =
-        !t ||
-        normalizeString(
-          (item as any).title ?? (item as any).header ?? ""
-        ).includes(t);
-      const matchesStatus =
-        status.length === 0 || status.includes((item as any).status);
+      const hay = getSearchHaystack
+        ? getSearchHaystack(item)
+        : (item as any).title ?? (item as any).header ?? "";
+      const haystack = Array.isArray(hay)
+        ? hay.filter(Boolean).map((x) => normalizeString(String(x))).join(" ")
+        : normalizeString(String(hay));
+      const matchesTitle = !searchEnabled || !t || haystack.includes(t);
+      const itemStatus = (item as any)[statusKey as any];
+      const matchesStatus = !statusEnabled || status.length === 0 || status.includes(itemStatus);
       return matchesTitle && matchesStatus;
     });
-  }, [data, title, status]);
+  }, [data, title, status, getSearchHaystack, searchEnabled, statusEnabled, statusKey]);
 
   const table = useReactTable({
     data: filtered,
@@ -236,6 +245,7 @@ export function DiceDataTable<TData extends { id: string }>({
           onToggleStatus={toggleStatus}
           availableStatuses={availableStatuses}
           onClearStatuses={clearStatuses}
+          showStatus={statusEnabled}
         />
         <div className="flex items-center gap-2">
           <DropdownMenu>
@@ -247,19 +257,18 @@ export function DiceDataTable<TData extends { id: string }>({
             <DropdownMenuContent align="end" className="w-56">
               {table
                 .getAllColumns()
-                .filter(
-                  (c) => typeof c.accessorFn !== "undefined" && c.getCanHide()
-                )
+                .filter((c) => c.getCanHide())
                 .map((column) => (
-                  <DropdownMenuItem
+                  <DropdownMenuCheckboxItem
                     key={column.id}
-                    className="capitalize"
-                    onClick={() =>
+                    checked={column.getIsVisible()}
+                    onCheckedChange={() =>
                       column.toggleVisibility(!column.getIsVisible())
                     }
+                    className="capitalize"
                   >
-                    {column.id}
-                  </DropdownMenuItem>
+                    {((column.columnDef as any)?.meta?.label as string) || column.id}
+                  </DropdownMenuCheckboxItem>
                 ))}
             </DropdownMenuContent>
           </DropdownMenu>
@@ -271,7 +280,14 @@ export function DiceDataTable<TData extends { id: string }>({
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} colSpan={header.colSpan}>
+                  <TableHead
+                    key={header.id}
+                    colSpan={header.colSpan}
+                    style={{
+                      width: (header.column.columnDef as any).meta?.width,
+                      minWidth: (header.column.columnDef as any).meta?.minWidth,
+                    }}
+                  >
                     {header.isPlaceholder ? null : typeof header.column
                         .columnDef.header === "string" ? (
                       <DataTableColumnHeader
@@ -297,7 +313,13 @@ export function DiceDataTable<TData extends { id: string }>({
                   data-state={row.getIsSelected() && "selected"}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell
+                      key={cell.id}
+                      style={{
+                        width: (cell.column.columnDef as any).meta?.width,
+                        minWidth: (cell.column.columnDef as any).meta?.minWidth,
+                      }}
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
@@ -319,7 +341,7 @@ export function DiceDataTable<TData extends { id: string }>({
           </TableBody>
         </Table>
       </div>
-      <DataTablePagination table={table} showPageSize showSelectionInfo={false} />
+      <DataTablePagination table={table} showPageSize showSelectionInfo={false} pageSizeOptions={pageSizeOptions ?? [10, 20, 30, 40, 50]} />
     </div>
   );
 }

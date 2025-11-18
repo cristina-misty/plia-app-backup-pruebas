@@ -21,6 +21,7 @@ export function DataTableToolbar({
   onToggleStatus,
   availableStatuses,
   onClearStatuses,
+  showStatus = true,
 }: {
   title: string
   status: string[]
@@ -28,6 +29,7 @@ export function DataTableToolbar({
   onToggleStatus: (v: string) => void
   availableStatuses: { label: string; value: string; icon?: React.ComponentType }[]
   onClearStatuses: () => void
+  showStatus?: boolean
 }) {
   return (
     <div className="flex items-center gap-3">
@@ -41,47 +43,51 @@ export function DataTableToolbar({
           aria-label="Filter by title"
         />
       </div>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm">
-            Status
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-40">
-          {availableStatuses.map(({ label, value }) => (
-            <DropdownMenuCheckboxItem
-              key={value}
-              checked={status.includes(value)}
-              onCheckedChange={() => onToggleStatus(value)}
-              className="capitalize"
-            >
-              {value === "active" ? (
-                <CheckCircle className="mr-2 h-4 w-4" />
-              ) : (
-                <XCircle className="mr-2 h-4 w-4" />
-              )}
-              {label}
-            </DropdownMenuCheckboxItem>
-          ))}
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={onClearStatuses}>Clear</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-      <div className="flex items-center gap-2">
-        {status.map((s) => (
-          <Badge key={s} variant="outline" className="capitalize">
-            {s}
-            <button
-              type="button"
-              aria-label={`Remove ${s}`}
-              className="ml-2 inline-flex items-center"
-              onClick={() => onToggleStatus(s)}
-            >
-              <X className="h-3 w-3" />
-            </button>
-          </Badge>
-        ))}
-      </div>
+      {showStatus && (
+        <>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                Status
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-40">
+              {availableStatuses.map(({ label, value }) => (
+                <DropdownMenuCheckboxItem
+                  key={value}
+                  checked={status.includes(value)}
+                  onCheckedChange={() => onToggleStatus(value)}
+                  className="capitalize"
+                >
+                  {value === "active" ? (
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                  ) : (
+                    <XCircle className="mr-2 h-4 w-4" />
+                  )}
+                  {label}
+                </DropdownMenuCheckboxItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={onClearStatuses}>Clear</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <div className="flex items-center gap-2">
+            {status.map((s) => (
+              <Badge key={s} variant="outline" className="capitalize">
+                {s}
+                <button
+                  type="button"
+                  aria-label={`Remove ${s}`}
+                  className="ml-2 inline-flex items-center"
+                  onClick={() => onToggleStatus(s)}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   )
 }
