@@ -84,7 +84,7 @@ export type NormalizeStringListOptions = {
 };
 
 export function normalizeStringList(
-  input: string | string[] | null | undefined,
+  input: string | string[] | null | undefined | unknown,
   opts: NormalizeStringListOptions = {}
 ): string[] {
   const {

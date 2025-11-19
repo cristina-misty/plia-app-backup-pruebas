@@ -14,6 +14,20 @@ export default function ScenesClient() {
       columns={sceneColumns}
       availableStatuses={[]}
       statusEnabled={false}
+      filterKeys={[
+        {
+          id: "episode_order",
+          label: "Episode",
+          classNameTrigger: "max-w-[150px]",
+        },
+        { id: "int_ext", label: "I/E", classNameTrigger: "max-w-[150px]" },
+        { id: "day_night", label: "D/N", classNameTrigger: "max-w-[150px]" },
+        {
+          id: "length",
+          label: "Page length",
+          classNameTrigger: "max-w-[200px]",
+        },
+      ]}
       getSearchHaystack={(r: any) => [
         r.scene_id,
         r.scene_title,

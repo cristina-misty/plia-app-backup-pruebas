@@ -28,8 +28,8 @@ export const columns: ColumnDef<GenericRow, unknown>[] = [
     cell: ({ row }) => (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon">
-            <MoreHorizontal className="h-4 w-4" />
+          <Button variant="link" size="icon" className="text-current">
+            <MoreHorizontal className="size-4 text-current" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
@@ -70,7 +70,7 @@ export const columns: ColumnDef<GenericRow, unknown>[] = [
     enableSorting: true,
     cell: ({ getValue }) => (
       <Badge
-        variant="outline"
+        variant="default"
         className={stringToColorPallete(String(getValue() ?? ""))}
       >
         {String(getValue() ?? "")}
@@ -92,7 +92,7 @@ export const columns: ColumnDef<GenericRow, unknown>[] = [
     enableSorting: true,
     cell: ({ getValue }) => (
       <Badge
-        variant="outline"
+        variant="default"
         className={stringToColorPallete(String(getValue() ?? ""))}
       >
         {String(getValue() ?? "")}
@@ -112,9 +112,21 @@ export const columns: ColumnDef<GenericRow, unknown>[] = [
     ),
     accessorFn: (row) => (row as any).location ?? "—",
     enableSorting: true,
-    cell: ({ getValue }) => (
-      <TruncateText maxChars={20} text={String(getValue() ?? "")} />
-    ),
+    cell: ({ getValue }) => {
+      const full = String(getValue() ?? "");
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="cursor-help">
+              <TruncateText maxChars={20} text={full} />
+            </span>
+          </TooltipTrigger>
+          <TooltipContent side="top" align="center">
+            <span className="max-w-xs wrap-break-word">{full || "—"}</span>
+          </TooltipContent>
+        </Tooltip>
+      );
+    },
     meta: { width: "180px", label: "Set" },
   },
   {
@@ -129,9 +141,21 @@ export const columns: ColumnDef<GenericRow, unknown>[] = [
     ),
     accessorFn: (row) => (row as any).scene_title ?? "—",
     enableSorting: true,
-    cell: ({ getValue }) => (
-      <TruncateText maxChars={30} text={String(getValue() ?? "")} />
-    ),
+    cell: ({ getValue }) => {
+      const full = String(getValue() ?? "");
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="cursor-help">
+              <TruncateText maxChars={30} text={full} />
+            </span>
+          </TooltipTrigger>
+          <TooltipContent side="top" align="center">
+            <span className="max-w-xs wrap-break-word">{full || "—"}</span>
+          </TooltipContent>
+        </Tooltip>
+      );
+    },
     meta: { width: "250px", label: "Scene Title" },
   },
   {
@@ -174,11 +198,34 @@ export const columns: ColumnDef<GenericRow, unknown>[] = [
         Cast ID <span className="text-muted-foreground">↕︎</span>
       </button>
     ),
-    accessorFn: (row) => (row as any).chars_total ?? "—",
+    accessorFn: (row) => {
+      const names = normalizeStringList(row.chars_total, {
+        unique: true,
+        lowercaseForDedup: true,
+      });
+      if (!names.length) return "—";
+      const formatted = names
+        .map((n) => n.toLowerCase().slice(0, 2))
+        .join(", ");
+      return formatted;
+    },
     enableSorting: true,
-    cell: ({ getValue }) => (
-      <TruncateText maxChars={20} text={String(getValue() ?? "")} />
-    ),
+    cell: ({ getValue, row }) => {
+      const full = normalizeStringList(row.original.chars_total, {
+        unique: true,
+        lowercaseForDedup: true,
+      }).join(", ");
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="text-xs cursor-help">{getValue() as string}</span>
+          </TooltipTrigger>
+          <TooltipContent side="top" align="center">
+            <span className="max-w-xs wrap-break-word">{full || "—"}</span>
+          </TooltipContent>
+        </Tooltip>
+      );
+    },
     meta: { width: "200px", label: "Cast ID" },
   },
 ];

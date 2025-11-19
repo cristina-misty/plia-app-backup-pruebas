@@ -23,6 +23,7 @@ export interface Scene {
   specific_rooms: string;
   syntax_label: string;
   warnings: string;
+  line_color?: string;
 }
 
 // 🔹 Respuesta cruda de la API (antes de filtrar)

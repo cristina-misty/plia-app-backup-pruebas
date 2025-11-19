@@ -13,6 +13,7 @@ type DataTableRenderProps = {
   getSearchHaystack?: (row: any) => string | Array<unknown>;
   statusKey?: string;
   pageSizeOptions?: number[];
+  filterKeys?: { id: string; label: string; classNameTrigger?: string }[];
 };
 
 export default function DataTableRender({
@@ -23,7 +24,8 @@ export default function DataTableRender({
   statusEnabled = true,
   getSearchHaystack,
   statusKey = "status",
-  pageSizeOptions = [10, 20, 50],
+  pageSizeOptions = [10, 25, 50, 100, 500],
+  filterKeys,
 }: DataTableRenderProps) {
   const rows = React.useMemo(() => (Array.isArray(data) ? data : []), [data]);
   const cols = React.useMemo<ColumnDef<any, unknown>[]>(() => {
@@ -48,6 +50,7 @@ export default function DataTableRender({
       getSearchHaystack={haystackGetter}
       statusKey={statusKey}
       pageSizeOptions={pageSizeOptions}
+      filterKeys={filterKeys}
     />
   );
 }

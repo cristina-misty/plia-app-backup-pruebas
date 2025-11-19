@@ -1,18 +1,18 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { CheckCircle, XCircle, Search, X } from "lucide-react"
+import * as React from "react";
+import { Input } from "@/components/ui/input";
+import { CheckCircle, XCircle, Search, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuCheckboxItem,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu"
+  MultiSelect,
+  MultiSelectTrigger,
+  MultiSelectValue,
+  MultiSelectContent,
+  MultiSelectGroup,
+  MultiSelectItem,
+  MultiSelectSeparator,
+} from "@/components/ui/multi-select";
 
 export function DataTableToolbar({
   title,
@@ -27,30 +27,40 @@ export function DataTableToolbar({
   filters,
   actions,
 }: {
-  title: string
-  status: string[]
-  onTitleChange: (v: string) => void
-  onToggleStatus: (v: string) => void
-  availableStatuses: { label: string; value: string; icon?: React.ComponentType<{ className?: string }> }[]
-  onClearStatuses: () => void
-  showStatus?: boolean
-  searchEnabled?: boolean
-  searchPlaceholder?: string
+  title: string;
+  status: string[];
+  onTitleChange: (v: string) => void;
+  onToggleStatus: (v: string) => void;
+  availableStatuses: {
+    label: string;
+    value: string;
+    icon?: React.ComponentType<{ className?: string }>;
+  }[];
+  onClearStatuses: () => void;
+  showStatus?: boolean;
+  searchEnabled?: boolean;
+  searchPlaceholder?: string;
   filters?: {
-    id: string
-    label: string
-    options: { label: string; value: string; icon?: React.ComponentType<{ className?: string }> }[]
-    selected: string[]
-    onToggle: (v: string) => void
-    onClear: () => void
-  }[]
-  actions?: React.ReactNode
+    id: string;
+    label: string;
+    options: {
+      label: string;
+      value: string;
+      icon?: React.ComponentType<{ className?: string }>;
+    }[];
+    selected: string[];
+    onToggle: (v: string) => void;
+    onClear: () => void;
+    classNameTrigger?: string;
+    classNameContent?: string;
+  }[];
+  actions?: React.ReactNode;
 }) {
   return (
     <div className="flex items-center gap-3">
       {searchEnabled && (
-        <div className="relative w-64">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 opacity-50" />
+        <div className="relative w-40">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-4 opacity-50" />
           <Input
             value={title}
             onChange={(e) => onTitleChange(e.target.value)}
@@ -63,94 +73,82 @@ export function DataTableToolbar({
       {filters && filters.length > 0 && (
         <>
           {filters.map((f) => (
-            <React.Fragment key={f.id}>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    {f.label}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-44">
-                  {f.options.map(({ label, value, icon: Icon }) => (
-                    <DropdownMenuCheckboxItem
+            <MultiSelect
+              key={f.id}
+              values={f.selected}
+              onValuesChange={(vals) => {
+                const next = new Set(vals);
+                const prev = new Set(f.selected);
+                Array.from(next).forEach((v) => {
+                  if (!prev.has(v)) f.onToggle(v);
+                });
+                Array.from(prev).forEach((v) => {
+                  if (!next.has(v)) f.onToggle(v);
+                });
+              }}
+            >
+              <MultiSelectTrigger size="sm" className={f.classNameTrigger}>
+                {f.label}
+                <MultiSelectValue placeholder="" />
+              </MultiSelectTrigger>
+              <MultiSelectContent search={{ placeholder: f.label }}>
+                <MultiSelectGroup>
+                  {f.options.map(({ label, value }) => (
+                    <MultiSelectItem
                       key={value}
-                      checked={f.selected.includes(value)}
-                      onCheckedChange={() => f.onToggle(value)}
-                      className="capitalize"
+                      value={value}
+                      badgeLabel={label}
                     >
-                      {Icon ? <Icon className="mr-2 h-4 w-4" /> : null}
                       {label}
-                    </DropdownMenuCheckboxItem>
+                    </MultiSelectItem>
                   ))}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={f.onClear}>Clear</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <div className="flex items-center gap-2">
-                {f.selected.map((s) => (
-                  <Badge key={`${f.id}-${s}`} variant="outline" className="capitalize">
-                    {s}
-                    <button
-                      type="button"
-                      aria-label={`Remove ${s}`}
-                      className="ml-2 inline-flex items-center"
-                      onClick={() => f.onToggle(s)}
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                ))}
-              </div>
-            </React.Fragment>
+                </MultiSelectGroup>
+                <MultiSelectSeparator />
+                <div className="px-2 py-1.5">
+                  <Button
+                    variant="link"
+                    size="sm"
+                    onClick={() => f.onClear()}
+                    aria-label={`Clear ${f.label}`}
+                  >
+                    Clear filters
+                  </Button>
+                </div>
+              </MultiSelectContent>
+            </MultiSelect>
           ))}
         </>
       )}
       {showStatus && (
-        <>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                Status
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-40">
+        <MultiSelect
+          values={status}
+          onValuesChange={(vals) => {
+            const next = new Set(vals);
+            const prev = new Set(status);
+            Array.from(next).forEach((v) => {
+              if (!prev.has(v)) onToggleStatus(v);
+            });
+            Array.from(prev).forEach((v) => {
+              if (!next.has(v)) onToggleStatus(v);
+            });
+          }}
+        >
+          <MultiSelectTrigger size="sm">
+            Status
+            <MultiSelectValue placeholder="" />
+          </MultiSelectTrigger>
+          <MultiSelectContent search={{ placeholder: "Status" }}>
+            <MultiSelectGroup>
               {availableStatuses.map(({ label, value }) => (
-                <DropdownMenuCheckboxItem
-                  key={value}
-                  checked={status.includes(value)}
-                  onCheckedChange={() => onToggleStatus(value)}
-                  className="capitalize"
-                >
-                  {value === "active" ? (
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                  ) : (
-                    <XCircle className="mr-2 h-4 w-4" />
-                  )}
+                <MultiSelectItem key={value} value={value} badgeLabel={label}>
                   {label}
-                </DropdownMenuCheckboxItem>
+                </MultiSelectItem>
               ))}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={onClearStatuses}>Clear</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <div className="flex items-center gap-2">
-            {status.map((s) => (
-              <Badge key={s} variant="outline" className="capitalize">
-                {s}
-                <button
-                  type="button"
-                  aria-label={`Remove ${s}`}
-                  className="ml-2 inline-flex items-center"
-                  onClick={() => onToggleStatus(s)}
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </Badge>
-            ))}
-          </div>
-        </>
+            </MultiSelectGroup>
+          </MultiSelectContent>
+        </MultiSelect>
       )}
       {actions}
     </div>
-  )
+  );
 }

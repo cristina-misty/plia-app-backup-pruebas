@@ -27,13 +27,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { DataTablePagination } from "@/components/ui/data-table-pagination";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
@@ -43,6 +40,8 @@ import { createStore } from "zustand/vanilla";
 import { useStore } from "zustand";
 import { normalizeString } from "@/lib/utils/search";
 import { DataTableToolbar } from "./DataTableToolbar";
+import { getTailwindPaletteClass } from "@/lib/utils/colors";
+import { IconX } from "@tabler/icons-react";
 
 type DiceTableState = {
   title: string;
@@ -60,9 +59,14 @@ type DiceTableState = {
   setSorting: OnChangeFn<SortingState>;
   setColumnFilters: OnChangeFn<ColumnFiltersState>;
   setPagination: OnChangeFn<PaginationState>;
+  rowColorKey?: string;
+  filtersState: Record<string, string[]>;
+  toggleFilterValue: (id: string, value: string) => void;
+  clearFilterValues: (id: string) => void;
+  clearAllFilters: () => void;
 };
 
-export function DiceDataTable<TData extends { id: string }>({
+export function DiceDataTable<TData extends Record<string, any>>({
   data,
   columns,
   availableStatuses = [],
@@ -71,6 +75,7 @@ export function DiceDataTable<TData extends { id: string }>({
   getSearchHaystack,
   statusKey = "status",
   pageSizeOptions,
+  filterKeys,
 }: {
   data: TData[];
   columns: ColumnDef<TData, unknown>[];
@@ -84,6 +89,11 @@ export function DiceDataTable<TData extends { id: string }>({
   getSearchHaystack?: (item: TData) => string | Array<unknown>;
   statusKey?: keyof TData | string;
   pageSizeOptions?: number[];
+  filterKeys?: {
+    id: keyof TData | string;
+    label: string;
+    classNameTrigger?: string;
+  }[];
 }) {
   const storeRef = React.useRef(
     createStore<DiceTableState>(() => ({
@@ -93,7 +103,18 @@ export function DiceDataTable<TData extends { id: string }>({
       columnVisibility: {},
       sorting: [],
       columnFilters: [],
-      pagination: { pageIndex: 0, pageSize: 10 },
+      pagination: { pageIndex: 0, pageSize: 500 },
+      filtersState: {},
+      clearAllFilters: () => {
+        storeRef.current.setState({
+          status: [],
+          filtersState: {},
+          pagination: {
+            ...storeRef.current.getState().pagination,
+            pageIndex: 0,
+          },
+        });
+      },
       setTitle: (v) =>
         storeRef.current.setState({
           title: v,
@@ -116,6 +137,33 @@ export function DiceDataTable<TData extends { id: string }>({
       clearStatuses: () => {
         storeRef.current.setState({
           status: [],
+          pagination: {
+            ...storeRef.current.getState().pagination,
+            pageIndex: 0,
+          },
+        });
+      },
+      toggleFilterValue: (id, value) => {
+        const prev = storeRef.current.getState().filtersState[id] ?? [];
+        const next = prev.includes(value)
+          ? prev.filter((x) => x !== value)
+          : [...prev, value];
+        storeRef.current.setState({
+          filtersState: {
+            ...storeRef.current.getState().filtersState,
+            [id]: next,
+          },
+          pagination: {
+            ...storeRef.current.getState().pagination,
+            pageIndex: 0,
+          },
+        });
+      },
+      clearFilterValues: (id) => {
+        const next = { ...storeRef.current.getState().filtersState };
+        delete next[id];
+        storeRef.current.setState({
+          filtersState: next,
           pagination: {
             ...storeRef.current.getState().pagination,
             pageIndex: 0,
@@ -185,6 +233,16 @@ export function DiceDataTable<TData extends { id: string }>({
   const sorting = useStore(storeRef.current, (s) => s.sorting);
   const columnFilters = useStore(storeRef.current, (s) => s.columnFilters);
   const pagination = useStore(storeRef.current, (s) => s.pagination);
+  const filtersState = useStore(storeRef.current, (s) => s.filtersState);
+  const toggleFilterValue = useStore(
+    storeRef.current,
+    (s) => s.toggleFilterValue
+  );
+  const clearFilterValues = useStore(
+    storeRef.current,
+    (s) => s.clearFilterValues
+  );
+  const clearAllFilters = useStore(storeRef.current, (s) => s.clearAllFilters);
 
   const setTitle = useStore(storeRef.current, (s) => s.setTitle);
   const toggleStatus = useStore(storeRef.current, (s) => s.toggleStatus);
@@ -217,7 +275,15 @@ export function DiceDataTable<TData extends { id: string }>({
       const itemStatus = (item as any)[statusKey as any];
       const matchesStatus =
         !statusEnabled || status.length === 0 || status.includes(itemStatus);
-      return matchesTitle && matchesStatus;
+      const matchesFilters = (filterKeys ?? []).every((fk) => {
+        const selected = filtersState[String(fk.id)] ?? [];
+        if (!selected || selected.length === 0) return true;
+        const v = (item as any)[fk.id as any];
+        const nv = normalizeString(v);
+        const set = new Set(selected.map((s) => normalizeString(s)));
+        return set.has(nv);
+      });
+      return matchesTitle && matchesStatus && matchesFilters;
     });
   }, [
     data,
@@ -227,6 +293,8 @@ export function DiceDataTable<TData extends { id: string }>({
     searchEnabled,
     statusEnabled,
     statusKey,
+    filtersState,
+    filterKeys,
   ]);
 
   const table = useReactTable({
@@ -239,7 +307,13 @@ export function DiceDataTable<TData extends { id: string }>({
       columnFilters,
       pagination,
     },
-    getRowId: (row) => (row as any).id,
+    getRowId: (row, index) =>
+      String(
+        (row as any)?.id ??
+          (row as any)?.scene_uuid ??
+          (row as any)?.episode_uuid ??
+          index
+      ),
     enableRowSelection: false,
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
@@ -254,7 +328,7 @@ export function DiceDataTable<TData extends { id: string }>({
 
   return (
     <div className="flex w-full flex-col gap-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 overflow-auto">
         <DataTableToolbar
           title={title}
           status={status}
@@ -263,6 +337,42 @@ export function DiceDataTable<TData extends { id: string }>({
           availableStatuses={availableStatuses}
           onClearStatuses={clearStatuses}
           showStatus={statusEnabled}
+          filters={(filterKeys ?? []).map((fk) => {
+            const optionsSet = new Set<string>();
+            for (const item of data) {
+              const v = (item as any)[fk.id as any];
+              if (!v) continue;
+              optionsSet.add(String(v));
+            }
+            const options = Array.from(optionsSet)
+              .sort((a, b) => a.localeCompare(b))
+              .map((v) => ({ label: v, value: v }));
+            const selected = filtersState[String(fk.id)] ?? [];
+            return {
+              id: String(fk.id),
+              label: fk.label,
+              options,
+              selected,
+              onToggle: (v: string) => toggleFilterValue(String(fk.id), v),
+              onClear: () => clearFilterValues(String(fk.id)),
+              classNameTrigger: fk.classNameTrigger,
+            };
+          })}
+          actions={(() => {
+            const hasAnyFilter =
+              status.length > 0 ||
+              Object.values(filtersState).some((arr) => (arr?.length ?? 0) > 0);
+            if (!hasAnyFilter) return null;
+            return (
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => clearAllFilters()}
+              >
+                <IconX />
+              </Button>
+            );
+          })()}
         />
         <div className="flex items-center gap-2">
           <DropdownMenu>
@@ -294,7 +404,7 @@ export function DiceDataTable<TData extends { id: string }>({
       </div>
       <div className="w-full overflow-hidden rounded-lg border">
         <Table className="table-fixed w-full">
-          <TableHeader className="bg-muted">
+          <TableHeader className="bg-background">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
@@ -329,6 +439,25 @@ export function DiceDataTable<TData extends { id: string }>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  className={getTailwindPaletteClass(
+                    (row.original as any)?.line_color
+                  )}
+                  style={
+                    getTailwindPaletteClass((row.original as any)?.line_color)
+                      ? undefined
+                      : (row.original as any)?.line_color
+                      ? {
+                          backgroundColor: String(
+                            (row.original as any)?.line_color
+                          ),
+                        }
+                      : undefined
+                  }
+                  title={
+                    (row.original as any)?.line_color
+                      ? String((row.original as any)?.line_color)
+                      : undefined
+                  }
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell

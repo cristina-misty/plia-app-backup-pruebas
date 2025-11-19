@@ -1,18 +1,18 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { ArrowUpDown } from "lucide-react"
-import type { Column } from "@tanstack/react-table"
-import { Button } from "@/components/ui/button"
+import * as React from "react";
+import { ArrowUpDown } from "lucide-react";
+import type { Column } from "@tanstack/react-table";
+import { Button } from "@/components/ui/button";
 
 export function DataTableColumnHeader<TData>({
   column,
   label,
 }: {
-  column: Column<TData, unknown>
-  label: string
+  column: Column<TData, unknown>;
+  label: string;
 }) {
-  const isSorted = column.getIsSorted()
+  const isSorted = column.getIsSorted();
   return (
     <Button
       variant="ghost"
@@ -23,5 +23,5 @@ export function DataTableColumnHeader<TData>({
       {label}
       <ArrowUpDown className="size-4" />
     </Button>
-  )
+  );
 }
