@@ -2,39 +2,14 @@
 
 import * as React from "react";
 import { SearchInput } from "@/components/ui/search-input";
-
-type SelectOption = { value: string; label: string };
-
-interface FilterConfig {
-  value?: string | string[];
-  setValue?: ((v: string) => void) | ((v: string[]) => void);
-  toggle?: (v: string) => void;
-  clear?: () => void;
-  options: SelectOption[];
-  placeholder?: string;
-  ariaLabel?: string;
-  containerClassName?: string;
-  multiple?: boolean;
-}
-
-interface SearchConfig {
-  query: string;
-  setQuery: (q: string) => void;
-  clear: () => void;
-  placeholder?: string;
-  ariaLabel?: string;
-  containerClassName?: string;
-}
-
-interface SearchRowProps {
-  filterConfig?: FilterConfig;
-  searchConfig?: SearchConfig;
-  rightActions?: React.ReactNode;
-}
+import { SearchRowProps } from "@/types/general/search";
+import { ToggleViewGroup } from "./toggle-view";
 
 const SearchRow: React.FC<SearchRowProps> = ({
   searchConfig,
-  rightActions,
+  viewMode,
+  onChangeViewMode,
+  chartsEnabled,
 }) => {
   const [local, setLocal] = React.useState(searchConfig?.query ?? "");
   React.useEffect(() => {
@@ -68,9 +43,16 @@ const SearchRow: React.FC<SearchRowProps> = ({
   })();
 
   return (
-    <div className="w-full flex items-end overflow-auto gap-2">
+    <div className="w-full flex items-end overflow-auto gap-2 mb-2">
       <div className="flex-1">{SearchPart}</div>
-      <div className="flex items-center gap-2">{rightActions}</div>
+      <div className="flex items-center gap-2">
+        <ToggleViewGroup
+          className="inline-flex"
+          value={viewMode}
+          onChange={onChangeViewMode}
+          chartsEnabled={chartsEnabled}
+        />
+      </div>
     </div>
   );
 };

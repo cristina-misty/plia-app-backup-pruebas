@@ -14,6 +14,7 @@ type DataTableRenderProps = {
   statusKey?: string;
   pageSizeOptions?: number[];
   filterKeys?: { id: string; label: string; classNameTrigger?: string }[];
+  className?: string;
 };
 
 export default function DataTableRender({
@@ -26,6 +27,7 @@ export default function DataTableRender({
   statusKey = "status",
   pageSizeOptions = [10, 25, 50, 100, 500],
   filterKeys,
+  className,
 }: DataTableRenderProps) {
   const rows = React.useMemo(() => (Array.isArray(data) ? data : []), [data]);
   const cols = React.useMemo<ColumnDef<any, unknown>[]>(() => {
@@ -41,16 +43,18 @@ export default function DataTableRender({
   );
 
   return (
-    <DiceDataTable
-      data={rows as any[]}
-      columns={cols}
-      availableStatuses={availableStatuses ?? []}
-      searchEnabled={searchEnabled}
-      statusEnabled={statusEnabled}
-      getSearchHaystack={haystackGetter}
-      statusKey={statusKey}
-      pageSizeOptions={pageSizeOptions}
-      filterKeys={filterKeys}
-    />
+    <div className={className}>
+      <DiceDataTable
+        data={rows as any[]}
+        columns={cols}
+        availableStatuses={availableStatuses ?? []}
+        searchEnabled={searchEnabled}
+        statusEnabled={statusEnabled}
+        getSearchHaystack={haystackGetter}
+        statusKey={statusKey}
+        pageSizeOptions={pageSizeOptions}
+        filterKeys={filterKeys}
+      />
+    </div>
   );
 }

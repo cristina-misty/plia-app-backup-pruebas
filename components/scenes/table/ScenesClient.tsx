@@ -6,8 +6,11 @@ import { columns as sceneColumns } from "@/components/scenes/table/columns";
 import { useScenes } from "@/hooks/api/useScenes";
 import SearchRow from "@/components/general/search-row";
 import { useSearchFilters } from "@/hooks/general/useSearchFilters";
+import { useToggleView3 } from "@/components/general/toggle-view";
 
 export default function ScenesClient() {
+  const { mode, setMode, viewTable, viewCards, viewCharts } =
+    useToggleView3("table");
   const { scenes } = useScenes({ autoFetch: true });
   const { query, setQuery, clearQuery, filtered } = useSearchFilters(scenes, {
     getHaystack: (r: any) => [
@@ -31,10 +34,14 @@ export default function ScenesClient() {
           clear: clearQuery,
           placeholder: "Search",
           ariaLabel: "Search scenes",
-          containerClassName: "w-full my-2",
+          containerClassName: "w-full",
         }}
+        viewMode={mode}
+        onChangeViewMode={setMode}
+        /* chartsEnabled={Boolean(chartComponent)} */
       />
       <DataTableRender
+        className={viewTable}
         data={filtered}
         columns={sceneColumns}
         availableStatuses={[]}
