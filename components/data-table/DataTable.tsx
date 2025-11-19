@@ -102,7 +102,7 @@ export function DiceDataTable<TData extends Record<string, any>>({
       columnVisibility: {},
       sorting: [],
       columnFilters: [],
-      pagination: { pageIndex: 0, pageSize: 50 },
+      pagination: { pageIndex: 0, pageSize: 500 },
       filtersState: {},
       clearAllFilters: () => {
         storeRef.current.setState({
@@ -514,7 +514,10 @@ export function DiceDataTable<TData extends Record<string, any>>({
               <>
                 {shouldVirtualize && topPad > 0 && (
                   <TableRow>
-                    <TableCell colSpan={columns.length} style={{ height: topPad }} />
+                    <TableCell
+                      colSpan={columns.length}
+                      style={{ height: topPad }}
+                    />
                   </TableRow>
                 )}
                 {visibleRows.map((row) => (
@@ -524,42 +527,46 @@ export function DiceDataTable<TData extends Record<string, any>>({
                     className={getTailwindPaletteClass(
                       (row.original as any)?.line_color
                     )}
-                  style={
-                    getTailwindPaletteClass((row.original as any)?.line_color)
-                      ? undefined
-                      : (row.original as any)?.line_color
-                      ? {
-                          backgroundColor: String(
-                            (row.original as any)?.line_color
-                          ),
-                        }
-                      : undefined
-                  }
-                  title={
-                    (row.original as any)?.line_color
-                      ? String((row.original as any)?.line_color)
-                      : undefined
-                  }
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell
-                      key={cell.id}
-                      style={{
-                        width: (cell.column.columnDef as any).meta?.width,
-                        minWidth: (cell.column.columnDef as any).meta?.minWidth,
-                      }}
-                    >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
+                    style={
+                      getTailwindPaletteClass((row.original as any)?.line_color)
+                        ? undefined
+                        : (row.original as any)?.line_color
+                        ? {
+                            backgroundColor: String(
+                              (row.original as any)?.line_color
+                            ),
+                          }
+                        : undefined
+                    }
+                    title={
+                      (row.original as any)?.line_color
+                        ? String((row.original as any)?.line_color)
+                        : undefined
+                    }
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell
+                        key={cell.id}
+                        style={{
+                          width: (cell.column.columnDef as any).meta?.width,
+                          minWidth: (cell.column.columnDef as any).meta
+                            ?.minWidth,
+                        }}
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
                 {shouldVirtualize && bottomPad > 0 && (
                   <TableRow>
-                    <TableCell colSpan={columns.length} style={{ height: bottomPad }} />
+                    <TableCell
+                      colSpan={columns.length}
+                      style={{ height: bottomPad }}
+                    />
                   </TableRow>
                 )}
               </>
