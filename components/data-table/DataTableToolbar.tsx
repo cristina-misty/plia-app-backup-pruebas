@@ -26,6 +26,7 @@ export function DataTableToolbar({
   searchPlaceholder = "Search...",
   filters,
   actions,
+  loading,
 }: {
   title: string;
   status: string[];
@@ -55,19 +56,39 @@ export function DataTableToolbar({
     classNameContent?: string;
   }[];
   actions?: React.ReactNode;
+  loading?: boolean;
 }) {
+  const [q, setQ] = React.useState(title);
+  React.useEffect(() => {
+    setQ(title);
+  }, [title]);
+  React.useEffect(() => {
+    const id = window.setTimeout(() => {
+      onTitleChange(q);
+    }, 200);
+    return () => window.clearTimeout(id);
+  }, [q, onTitleChange]);
   return (
     <div className="flex items-center gap-3">
       {searchEnabled && (
         <div className="relative w-40">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-4 opacity-50" />
           <Input
-            value={title}
-            onChange={(e) => onTitleChange(e.target.value)}
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
             placeholder={searchPlaceholder}
             className="pl-8"
             aria-label="Search"
+            aria-busy={loading ? true : false}
           />
+          {loading && (
+            <span className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center text-muted-foreground">
+              <svg className="animate-spin size-4" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" opacity="0.25" />
+                <path d="M12 2a10 10 0 0 1 10 10" fill="none" stroke="currentColor" strokeWidth="2" />
+              </svg>
+            </span>
+          )}
         </div>
       )}
       {filters && filters.length > 0 && (

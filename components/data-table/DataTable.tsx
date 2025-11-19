@@ -13,7 +13,6 @@ import type {
 import {
   flexRender,
   getCoreRowModel,
-  getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
@@ -38,7 +37,7 @@ import { DataTableColumnHeader } from "./DataTableColumnHeader";
 
 import { createStore } from "zustand/vanilla";
 import { useStore } from "zustand";
-import { normalizeString } from "@/lib/utils/search";
+import { normalizeString, buildHaystack } from "@/lib/utils/search";
 import { DataTableToolbar } from "./DataTableToolbar";
 import { getTailwindPaletteClass } from "@/lib/utils/colors";
 import { IconX } from "@tabler/icons-react";
@@ -103,7 +102,7 @@ export function DiceDataTable<TData extends Record<string, any>>({
       columnVisibility: {},
       sorting: [],
       columnFilters: [],
-      pagination: { pageIndex: 0, pageSize: 500 },
+      pagination: { pageIndex: 0, pageSize: 50 },
       filtersState: {},
       clearAllFilters: () => {
         storeRef.current.setState({
@@ -224,6 +223,7 @@ export function DiceDataTable<TData extends Record<string, any>>({
   );
 
   const title = useStore(storeRef.current, (s) => s.title);
+  const deferredTitle = React.useDeferredValue(title);
   const status = useStore(storeRef.current, (s) => s.status);
   const rowSelection = useStore(storeRef.current, (s) => s.rowSelection);
   const columnVisibility = useStore(
@@ -259,18 +259,53 @@ export function DiceDataTable<TData extends Record<string, any>>({
   );
   const setPagination = useStore(storeRef.current, (s) => s.setPagination);
 
-  const filtered = React.useMemo(() => {
-    const t = normalizeString(title);
-    return data.filter((item) => {
+  const haystacks = React.useMemo(() => {
+    if (!searchEnabled) return [] as string[];
+    return data.map((item) => {
       const hay = getSearchHaystack
         ? getSearchHaystack(item)
         : (item as any).title ?? (item as any).header ?? "";
       const haystack = Array.isArray(hay)
-        ? hay
-            .filter(Boolean)
-            .map((x) => normalizeString(String(x)))
-            .join(" ")
-        : normalizeString(String(hay));
+        ? buildHaystack(hay)
+        : normalizeString(hay);
+      return haystack;
+    });
+  }, [data, getSearchHaystack, searchEnabled]);
+
+  const filterOptionsMap = React.useMemo(() => {
+    const map = new Map<string, { label: string; value: string }[]>();
+    for (const fk of filterKeys ?? []) {
+      const set = new Set<string>();
+      for (const item of data) {
+        const v = (item as any)[fk.id as any];
+        if (!v) continue;
+        set.add(String(v));
+      }
+      const options = Array.from(set)
+        .sort((a, b) => a.localeCompare(b))
+        .map((v) => ({ label: v, value: v }));
+      map.set(String(fk.id), options);
+    }
+    return map;
+  }, [data, filterKeys]);
+
+  const filterCacheRef = React.useRef<Map<string, TData[]>>(new Map());
+  const lastDataRef = React.useRef<TData[] | null>(null);
+  if (lastDataRef.current !== data) {
+    filterCacheRef.current.clear();
+    lastDataRef.current = data;
+  }
+
+  const filteredWithPerf = React.useMemo(() => {
+    const t = normalizeString(deferredTitle);
+    const cacheKey = JSON.stringify({ t, status, filtersState });
+    const cached = filterCacheRef.current.get(cacheKey);
+    if (cached) {
+      return { rows: cached, tookMs: 0 } as { rows: TData[]; tookMs: number };
+    }
+    const t0 = performance.now();
+    const rows = data.filter((item, i) => {
+      const haystack = haystacks[i] ?? "";
       const matchesTitle = !searchEnabled || !t || haystack.includes(t);
       const itemStatus = (item as any)[statusKey as any];
       const matchesStatus =
@@ -285,9 +320,12 @@ export function DiceDataTable<TData extends Record<string, any>>({
       });
       return matchesTitle && matchesStatus && matchesFilters;
     });
+    const tookMs = performance.now() - t0;
+    filterCacheRef.current.set(cacheKey, rows);
+    return { rows, tookMs } as { rows: TData[]; tookMs: number };
   }, [
     data,
-    title,
+    deferredTitle,
     status,
     getSearchHaystack,
     searchEnabled,
@@ -295,10 +333,16 @@ export function DiceDataTable<TData extends Record<string, any>>({
     statusKey,
     filtersState,
     filterKeys,
+    haystacks,
   ]);
 
+  const [isFilteringSlow, setIsFilteringSlow] = React.useState(false);
+  React.useEffect(() => {
+    setIsFilteringSlow(filteredWithPerf.tookMs > 100);
+  }, [filteredWithPerf.tookMs]);
+
   const table = useReactTable({
-    data: filtered,
+    data: filteredWithPerf.rows,
     columns,
     state: {
       sorting,
@@ -321,10 +365,45 @@ export function DiceDataTable<TData extends Record<string, any>>({
     onColumnVisibilityChange: setColumnVisibility,
     onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
+
+  const rowsModel = table.getRowModel().rows;
+  const shouldVirtualize = rowsModel.length > 300;
+  const ROW_HEIGHT = 44;
+  const overscan = 5;
+  const scrollRef = React.useRef<HTMLDivElement | null>(null);
+  const [scrollTop, setScrollTop] = React.useState(0);
+  const [viewportHeight, setViewportHeight] = React.useState(0);
+  React.useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const onScroll = () => setScrollTop(el.scrollTop);
+    onScroll();
+    el.addEventListener("scroll", onScroll);
+    const ro = new ResizeObserver(() => setViewportHeight(el.clientHeight));
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      ro.disconnect();
+    };
+  }, []);
+
+  const startIndexBase = Math.floor(scrollTop / ROW_HEIGHT);
+  const endIndexBase = Math.floor((scrollTop + viewportHeight) / ROW_HEIGHT);
+  const startIndex = Math.max(0, startIndexBase - overscan);
+  const endIndex = Math.min(rowsModel.length - 1, endIndexBase + overscan);
+  const visibleRows = shouldVirtualize
+    ? rowsModel.slice(startIndex, endIndex + 1)
+    : rowsModel;
+  const topPad = shouldVirtualize ? startIndex * ROW_HEIGHT : 0;
+  const bottomPad = shouldVirtualize
+    ? Math.max(
+        0,
+        rowsModel.length * ROW_HEIGHT - topPad - visibleRows.length * ROW_HEIGHT
+      )
+    : 0;
 
   return (
     <div className="flex w-full flex-col gap-4">
@@ -337,16 +416,9 @@ export function DiceDataTable<TData extends Record<string, any>>({
           availableStatuses={availableStatuses}
           onClearStatuses={clearStatuses}
           showStatus={statusEnabled}
+          searchEnabled={false}
           filters={(filterKeys ?? []).map((fk) => {
-            const optionsSet = new Set<string>();
-            for (const item of data) {
-              const v = (item as any)[fk.id as any];
-              if (!v) continue;
-              optionsSet.add(String(v));
-            }
-            const options = Array.from(optionsSet)
-              .sort((a, b) => a.localeCompare(b))
-              .map((v) => ({ label: v, value: v }));
+            const options = filterOptionsMap.get(String(fk.id)) ?? [];
             const selected = filtersState[String(fk.id)] ?? [];
             return {
               id: String(fk.id),
@@ -358,6 +430,7 @@ export function DiceDataTable<TData extends Record<string, any>>({
               classNameTrigger: fk.classNameTrigger,
             };
           })}
+          loading={false}
           actions={(() => {
             const hasAnyFilter =
               status.length > 0 ||
@@ -402,7 +475,10 @@ export function DiceDataTable<TData extends Record<string, any>>({
           </DropdownMenu>
         </div>
       </div>
-      <div className="w-full overflow-hidden rounded-lg border">
+      <div
+        ref={scrollRef}
+        className="w-full overflow-auto rounded-lg border max-h-[70vh]"
+      >
         <Table className="table-fixed w-full">
           <TableHeader className="bg-background">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -434,14 +510,20 @@ export function DiceDataTable<TData extends Record<string, any>>({
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                  className={getTailwindPaletteClass(
-                    (row.original as any)?.line_color
-                  )}
+            {rowsModel?.length ? (
+              <>
+                {shouldVirtualize && topPad > 0 && (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} style={{ height: topPad }} />
+                  </TableRow>
+                )}
+                {visibleRows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                    className={getTailwindPaletteClass(
+                      (row.original as any)?.line_color
+                    )}
                   style={
                     getTailwindPaletteClass((row.original as any)?.line_color)
                       ? undefined
@@ -474,7 +556,13 @@ export function DiceDataTable<TData extends Record<string, any>>({
                     </TableCell>
                   ))}
                 </TableRow>
-              ))
+              ))}
+                {shouldVirtualize && bottomPad > 0 && (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} style={{ height: bottomPad }} />
+                  </TableRow>
+                )}
+              </>
             ) : (
               <TableRow>
                 <TableCell
