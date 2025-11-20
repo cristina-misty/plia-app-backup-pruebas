@@ -1,15 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { MoreHorizontal } from "lucide-react";
 import TruncateText from "@/components/ui/truncate-text";
 import { stringToColorPallete } from "@/lib/utils/badges";
 import { normalizeStringList } from "@/lib/utils/format";
@@ -18,26 +10,44 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Scene } from "@/types/api/scenes";
+import { useRouter } from "next/navigation";
+import { useSelectedSceneStore } from "@/store/scenes/selectedScene";
+import TableActionsMenu from "@/components/general/table-actions-menu";
+import { IconEye } from "@tabler/icons-react";
 
-export type GenericRow = Record<string, unknown> & { id: string };
+function ActionsCell({ item }: { item: Scene }) {
+  const router = useRouter();
+  const setSelected = useSelectedSceneStore((s) => s.setSelected);
 
-export const columns: ColumnDef<GenericRow, unknown>[] = [
+  return (
+    <div className="flex items-center">
+      <TableActionsMenu
+        triggerVariant="ghost"
+        item={item}
+        onBeforeNavigate={(i) => setSelected(i)}
+        actions={[
+          {
+            label: "View",
+            icon: IconEye,
+            getHref: (i) => `/scenes/${i.scene_uuid}`,
+          },
+        ]}
+      />
+    </div>
+  );
+}
+
+export const columns: ColumnDef<Scene, unknown>[] = [
   {
     id: "actions",
+    header: "Actions",
     enableSorting: false,
-    cell: ({ row }) => (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="link" size="icon" className="text-current">
-            <MoreHorizontal className="size-4 text-current" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem>View</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    ),
-    meta: { width: "50px", label: "Actions" },
+    cell: ({ row }) => <ActionsCell item={row.original} />,
+    meta: {
+      width: "70px",
+      minWidth: "",
+    },
   },
   {
     id: "scene_id",
@@ -49,7 +59,7 @@ export const columns: ColumnDef<GenericRow, unknown>[] = [
         Scene ID <span className="text-muted-foreground">↕︎</span>
       </button>
     ),
-    accessorFn: (row) => (row as any).scene_id ?? "—",
+    accessorFn: (row) => row.scene_id ?? "—",
     enableSorting: true,
     cell: ({ getValue }) => (
       <span className="font-extrabold">{String(getValue() ?? "")}</span>
@@ -66,7 +76,7 @@ export const columns: ColumnDef<GenericRow, unknown>[] = [
         Int/Ext <span className="text-muted-foreground">↕︎</span>
       </button>
     ),
-    accessorFn: (row) => (row as any).int_ext ?? "—",
+    accessorFn: (row) => row.int_ext ?? "—",
     enableSorting: true,
     cell: ({ getValue }) => (
       <Badge
@@ -88,7 +98,7 @@ export const columns: ColumnDef<GenericRow, unknown>[] = [
         Day/Night <span className="text-muted-foreground">↕︎</span>
       </button>
     ),
-    accessorFn: (row) => (row as any).day_night ?? "—",
+    accessorFn: (row) => row.day_night ?? "—",
     enableSorting: true,
     cell: ({ getValue }) => (
       <Badge
@@ -110,7 +120,7 @@ export const columns: ColumnDef<GenericRow, unknown>[] = [
         Set <span className="text-muted-foreground">↕︎</span>
       </button>
     ),
-    accessorFn: (row) => (row as any).location ?? "—",
+    accessorFn: (row) => row.location ?? "—",
     enableSorting: true,
     cell: ({ getValue }) => {
       const full = String(getValue() ?? "");
@@ -139,7 +149,7 @@ export const columns: ColumnDef<GenericRow, unknown>[] = [
         Scene Title <span className="text-muted-foreground">↕︎</span>
       </button>
     ),
-    accessorFn: (row) => (row as any).scene_title ?? "—",
+    accessorFn: (row) => row.scene_title ?? "—",
     enableSorting: true,
     cell: ({ getValue }) => {
       const full = String(getValue() ?? "");
@@ -168,7 +178,7 @@ export const columns: ColumnDef<GenericRow, unknown>[] = [
         Page length <span className="text-muted-foreground">↕︎</span>
       </button>
     ),
-    accessorFn: (row) => (row as any).length ?? "—",
+    accessorFn: (row) => row.length ?? "—",
     enableSorting: true,
     cell: ({ getValue }) => <span>{String(getValue() ?? "")}</span>,
     meta: { width: "110px", label: "Page length" },
@@ -183,7 +193,7 @@ export const columns: ColumnDef<GenericRow, unknown>[] = [
         Screen Time <span className="text-muted-foreground">↕︎</span>
       </button>
     ),
-    accessorFn: (row) => (row as any).screen_time ?? "—",
+    accessorFn: (row) => row.screen_time ?? "—",
     enableSorting: true,
     cell: ({ getValue }) => <span>{String(getValue() ?? "")}</span>,
     meta: { width: "110px", label: "Screen Time" },

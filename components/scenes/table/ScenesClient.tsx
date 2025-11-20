@@ -8,12 +8,14 @@ import SearchRow from "@/components/general/search-row";
 import { useSearchFilters } from "@/hooks/general/useSearchFilters";
 import { useToggleView3 } from "@/components/general/toggle-view";
 import { useSeries } from "@/hooks/api/useSeries";
-import SmallCardSkeleton from "@/components/layouts/skeleton/small-card-skeleton";
 import TableSkeleton from "@/components/layouts/skeleton/table-skeleton";
 import { IconUsersGroup } from "@tabler/icons-react";
 import { Empty } from "@/components/ui/empty";
 import HeaderSkeleton from "@/components/layouts/skeleton/header-skeleton";
 import RowSearchSkeleton from "@/components/layouts/skeleton/row-search-skeleton";
+import { useSelectedSceneStore } from "@/store/scenes/selectedScene";
+import { useRouter } from "next/navigation";
+import { useBreadcrumbStore } from "@/store/general/breadcrumb";
 
 export default function ScenesClient() {
   const { mode, setMode, viewTable, viewCards, viewCharts } =
@@ -36,6 +38,10 @@ export default function ScenesClient() {
     ],
     filterKey: "day_night",
   });
+
+  const router = useRouter();
+  const setSelected = useSelectedSceneStore((s) => s.setSelected);
+  const setDetailLabel = useBreadcrumbStore((s) => s.setDetailLabel);
 
   if (scenesLoading || loading)
     return (
@@ -97,6 +103,13 @@ export default function ScenesClient() {
         ]}
         getSearchHaystack={(r: any) => r.scene_title}
         pageSizeOptions={[10, 25, 50, 100, 500]}
+        onRowClick={(item: any) => {
+          setSelected(item);
+          const label = String(item?.scene_id ?? item?.id ?? "");
+          if (label) setDetailLabel(label);
+          const id = String(item?.scene_uuid ?? "");
+          if (id) router.push(`/scenes/${id}`);
+        }}
       />
     </>
   );

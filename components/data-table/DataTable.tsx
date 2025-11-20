@@ -75,6 +75,7 @@ export function DiceDataTable<TData extends Record<string, any>>({
   statusKey = "status",
   pageSizeOptions,
   filterKeys,
+  onRowClick,
 }: {
   data: TData[];
   columns: ColumnDef<TData, unknown>[];
@@ -93,6 +94,7 @@ export function DiceDataTable<TData extends Record<string, any>>({
     label: string;
     classNameTrigger?: string;
   }[];
+  onRowClick?: (item: TData) => void;
 }) {
   const storeRef = React.useRef(
     createStore<DiceTableState>(() => ({
@@ -527,6 +529,19 @@ export function DiceDataTable<TData extends Record<string, any>>({
                     className={getTailwindPaletteClass(
                       (row.original as any)?.line_color
                     )}
+                    role={onRowClick ? "button" : undefined}
+                    tabIndex={onRowClick ? 0 : undefined}
+                    onClick={
+                      onRowClick ? () => onRowClick(row.original) : undefined
+                    }
+                    onKeyDown={
+                      onRowClick
+                        ? (e) => {
+                            if (e.key === "Enter" || e.key === " ")
+                              onRowClick(row.original);
+                          }
+                        : undefined
+                    }
                     style={
                       getTailwindPaletteClass((row.original as any)?.line_color)
                         ? undefined
