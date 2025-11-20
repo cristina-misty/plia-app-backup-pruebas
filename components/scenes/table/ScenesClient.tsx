@@ -50,26 +50,6 @@ export default function ScenesClient() {
   const router = useRouter();
   const setSelected = useSelectedSceneStore((s) => s.setSelected);
   const setDetailLabel = useBreadcrumbStore((s) => s.setDetailLabel);
-  const [visibleRows, setVisibleRows] = React.useState<any[]>(
-    () => filtered ?? []
-  );
-  const computeId = React.useCallback(
-    (row: any, index: number) =>
-      String(row?.id ?? row?.scene_uuid ?? row?.episode_uuid ?? index),
-    []
-  );
-  const filteredIdsKey = React.useMemo(() => {
-    const list = Array.isArray(filtered) ? filtered : [];
-    return list.map(computeId).join("|");
-  }, [filtered, computeId]);
-  const visibleIdsKey = React.useMemo(() => {
-    return visibleRows.map(computeId).join("|");
-  }, [visibleRows, computeId]);
-  React.useEffect(() => {
-    if (filteredIdsKey !== visibleIdsKey) {
-      setVisibleRows(Array.isArray(filtered) ? filtered : []);
-    }
-  }, [filteredIdsKey, visibleIdsKey, filtered]);
 
   if (scenesLoading || loading)
     return (
@@ -109,38 +89,7 @@ export default function ScenesClient() {
         onChangeViewMode={setMode}
         /* chartsEnabled={Boolean(chartComponent)} */
       />
-      {(() => {
-        const total = visibleRows.length;
-        const totalSeconds = sumScreenTime(visibleRows);
-        const timeText = formatHMS(totalSeconds);
-        const items = [
-          {
-            label: "Scenes",
-            value: total,
-            icon: <IconChairDirector className="size-8" />,
-          },
-          {
-            label: "Total screen time",
-            value: timeText,
-            icon: <EyeIcon className="size-8" />,
-          },
-          {
-            label: "Total page length",
-            value: 20,
-            icon: <IconNotes className="size-8" />,
-          },
-          {
-            label: "Total shooting time",
-            value: 20,
-            icon: <IconClock className="size-8" />,
-          },
-        ];
-        return (
-          <div className="flex justify-center items-center py-4">
-            <SmallCards items={items} className="w-full" />
-          </div>
-        );
-      })()}
+
       <DataTableRender
         className={viewTable}
         data={filtered}
@@ -169,10 +118,6 @@ export default function ScenesClient() {
           if (label) setDetailLabel(label);
           const id = String(item?.scene_uuid ?? "");
           if (id) router.push(`/scenes/${id}`);
-        }}
-        onFilteredDataChange={(rows: any[]) => {
-          const nextKey = rows.map(computeId).join("|");
-          if (nextKey !== visibleIdsKey) setVisibleRows(rows);
         }}
       />
     </>
