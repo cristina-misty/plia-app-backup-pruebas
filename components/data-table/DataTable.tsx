@@ -78,6 +78,8 @@ export function DiceDataTable<TData extends Record<string, any>>({
   filterKeys,
   onRowClick,
   metricsKey,
+  metricsCompute,
+  metricsNamespace,
 }: {
   data: TData[];
   columns: ColumnDef<TData, unknown>[];
@@ -98,8 +100,11 @@ export function DiceDataTable<TData extends Record<string, any>>({
   }[];
   onRowClick?: (item: TData) => void;
   metricsKey?: string;
+  metricsCompute?: Record<string, (rows: TData[]) => number>;
+  metricsNamespace?: string;
 }) {
-  const setMetricsCount = useDataTableMetricsStore((s) => s.setCount);
+  const setMetric = useDataTableMetricsStore((s) => s.setMetric);
+  const setMetrics = useDataTableMetricsStore((s) => s.setMetrics);
   const storeRef = React.useRef(
     createStore<DiceTableState>(() => ({
       title: "",
@@ -346,13 +351,39 @@ export function DiceDataTable<TData extends Record<string, any>>({
 
   const prevCountRef = React.useRef<number>(-1);
   React.useEffect(() => {
-    if (!metricsKey) return;
     const next = filteredWithPerf.rows.length;
-    if (prevCountRef.current !== next) {
-      setMetricsCount(metricsKey, next);
-      prevCountRef.current = next;
+    if (metricsNamespace) {
+      if (prevCountRef.current !== next) {
+        setMetric(metricsNamespace, "rows_count", next);
+        prevCountRef.current = next;
+      }
+      return;
     }
-  }, [metricsKey, filteredWithPerf.rows.length, setMetricsCount]);
+    if (metricsKey) {
+      if (prevCountRef.current !== next) {
+        setMetric("default", metricsKey, next);
+        prevCountRef.current = next;
+      }
+    }
+  }, [metricsNamespace, metricsKey, filteredWithPerf.rows.length, setMetric]);
+
+  const prevAggRef = React.useRef<Record<string, number>>({});
+  React.useEffect(() => {
+    if (!metricsCompute) return;
+    const entries = Object.entries(metricsCompute);
+    const payload: Record<string, number> = {};
+    for (const [key, compute] of entries) {
+      const value = compute(filteredWithPerf.rows as TData[]);
+      if (prevAggRef.current[key] !== value) {
+        payload[key] = value;
+        prevAggRef.current[key] = value;
+      }
+    }
+    if (Object.keys(payload).length > 0) {
+      const ns = metricsNamespace ?? "default";
+      setMetrics(ns, payload);
+    }
+  }, [metricsCompute, filteredWithPerf.rows, metricsNamespace, setMetrics]);
 
   const table = useReactTable({
     data: filteredWithPerf.rows,

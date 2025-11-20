@@ -51,9 +51,12 @@ export default function ScenesClient() {
   const router = useRouter();
   const setSelected = useSelectedSceneStore((s) => s.setSelected);
   const setDetailLabel = useBreadcrumbStore((s) => s.setDetailLabel);
-  const scenesCount = useDataTableMetricsStore(
-    (s) => s.counts["scenes"] ?? (Array.isArray(filtered) ? filtered.length : 0)
-  );
+  const scenesCount =
+    useDataTableMetricsStore((s) => s.metrics["scenes"]?.rows_count) ??
+    (Array.isArray(filtered) ? filtered.length : 0);
+  const totalScreenSeconds =
+    useDataTableMetricsStore((s) => s.metrics["scenes"]?.screen_time_total) ??
+    sumScreenTime(filtered);
 
   if (scenesLoading || loading)
     return (
@@ -99,6 +102,22 @@ export default function ScenesClient() {
             {
               label: "Total scenes",
               value: scenesCount,
+              icon: <IconChairDirector className="size-10" />,
+            },
+            {
+              label: "Total screen time",
+              value: formatHMS(totalScreenSeconds),
+              icon: <EyeIcon className="size-10" />,
+            },
+            {
+              label: "Total page length",
+              value: 20,
+              icon: <IconNotes className="size-10" />,
+            },
+            {
+              label: "Total shooting time",
+              value: 20,
+              icon: <IconClock className="size-10" />,
             },
           ]}
         />
@@ -111,7 +130,10 @@ export default function ScenesClient() {
         availableStatuses={[]}
         statusEnabled={false}
         searchEnabled={false}
-        metricsKey="scenes"
+        metricsNamespace="scenes"
+        metricsCompute={{
+          screen_time_total: (rows: any[]) => sumScreenTime(rows),
+        }}
         filterKeys={[
           {
             id: "episode_order",
