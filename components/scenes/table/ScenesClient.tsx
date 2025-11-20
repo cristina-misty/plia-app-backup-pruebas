@@ -9,13 +9,21 @@ import { useSearchFilters } from "@/hooks/general/useSearchFilters";
 import { useToggleView3 } from "@/components/general/toggle-view";
 import { useSeries } from "@/hooks/api/useSeries";
 import TableSkeleton from "@/components/layouts/skeleton/table-skeleton";
-import { IconUsersGroup } from "@tabler/icons-react";
+import {
+  IconChairDirector,
+  IconClock,
+  IconNotes,
+  IconUsersGroup,
+} from "@tabler/icons-react";
 import { Empty } from "@/components/ui/empty";
 import HeaderSkeleton from "@/components/layouts/skeleton/header-skeleton";
 import RowSearchSkeleton from "@/components/layouts/skeleton/row-search-skeleton";
 import { useSelectedSceneStore } from "@/store/scenes/selectedScene";
 import { useRouter } from "next/navigation";
 import { useBreadcrumbStore } from "@/store/general/breadcrumb";
+import SmallCards from "@/components/general/small-cards";
+import { sumScreenTime, formatHMS } from "@/lib/utils/format";
+import { EyeIcon, icons } from "lucide-react";
 
 export default function ScenesClient() {
   const { mode, setMode, viewTable, viewCards, viewCharts } =
@@ -42,6 +50,26 @@ export default function ScenesClient() {
   const router = useRouter();
   const setSelected = useSelectedSceneStore((s) => s.setSelected);
   const setDetailLabel = useBreadcrumbStore((s) => s.setDetailLabel);
+  const [visibleRows, setVisibleRows] = React.useState<any[]>(
+    () => filtered ?? []
+  );
+  const computeId = React.useCallback(
+    (row: any, index: number) =>
+      String(row?.id ?? row?.scene_uuid ?? row?.episode_uuid ?? index),
+    []
+  );
+  const filteredIdsKey = React.useMemo(() => {
+    const list = Array.isArray(filtered) ? filtered : [];
+    return list.map(computeId).join("|");
+  }, [filtered, computeId]);
+  const visibleIdsKey = React.useMemo(() => {
+    return visibleRows.map(computeId).join("|");
+  }, [visibleRows, computeId]);
+  React.useEffect(() => {
+    if (filteredIdsKey !== visibleIdsKey) {
+      setVisibleRows(Array.isArray(filtered) ? filtered : []);
+    }
+  }, [filteredIdsKey, visibleIdsKey, filtered]);
 
   if (scenesLoading || loading)
     return (
@@ -81,6 +109,38 @@ export default function ScenesClient() {
         onChangeViewMode={setMode}
         /* chartsEnabled={Boolean(chartComponent)} */
       />
+      {(() => {
+        const total = visibleRows.length;
+        const totalSeconds = sumScreenTime(visibleRows);
+        const timeText = formatHMS(totalSeconds);
+        const items = [
+          {
+            label: "Scenes",
+            value: total,
+            icon: <IconChairDirector className="size-8" />,
+          },
+          {
+            label: "Total screen time",
+            value: timeText,
+            icon: <EyeIcon className="size-8" />,
+          },
+          {
+            label: "Total page length",
+            value: 20,
+            icon: <IconNotes className="size-8" />,
+          },
+          {
+            label: "Total shooting time",
+            value: 20,
+            icon: <IconClock className="size-8" />,
+          },
+        ];
+        return (
+          <div className="flex justify-center items-center py-4">
+            <SmallCards items={items} className="w-full" />
+          </div>
+        );
+      })()}
       <DataTableRender
         className={viewTable}
         data={filtered}
@@ -109,6 +169,10 @@ export default function ScenesClient() {
           if (label) setDetailLabel(label);
           const id = String(item?.scene_uuid ?? "");
           if (id) router.push(`/scenes/${id}`);
+        }}
+        onFilteredDataChange={(rows: any[]) => {
+          const nextKey = rows.map(computeId).join("|");
+          if (nextKey !== visibleIdsKey) setVisibleRows(rows);
         }}
       />
     </>

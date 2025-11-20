@@ -41,7 +41,6 @@ function ActionsCell({ item }: { item: Scene }) {
 export const columns: ColumnDef<Scene, unknown>[] = [
   {
     id: "actions",
-    header: "Actions",
     enableSorting: false,
     cell: ({ row }) => <ActionsCell item={row.original} />,
     meta: {

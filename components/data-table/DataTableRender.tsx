@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { DiceDataTable } from "./DataTable";
+import { DiceDataTable as DiceDataTableComponent } from "./DataTable";
 import type { ColumnDef } from "@tanstack/react-table";
 
 type DataTableRenderProps = {
@@ -16,6 +16,7 @@ type DataTableRenderProps = {
   filterKeys?: { id: string; label: string; classNameTrigger?: string }[];
   className?: string;
   onRowClick?: (row: any) => void;
+  onFilteredDataChange?: (rows: any[]) => void;
 };
 
 export default function DataTableRender({
@@ -30,6 +31,7 @@ export default function DataTableRender({
   filterKeys,
   className,
   onRowClick,
+  onFilteredDataChange,
 }: DataTableRenderProps) {
   const rows = React.useMemo(() => (Array.isArray(data) ? data : []), [data]);
   const cols = React.useMemo<ColumnDef<any, unknown>[]>(() => {
@@ -46,18 +48,19 @@ export default function DataTableRender({
 
   return (
     <div className={className}>
-      <DiceDataTable
-        data={rows as any[]}
-        columns={cols}
-        availableStatuses={availableStatuses ?? []}
-        searchEnabled={searchEnabled}
-        statusEnabled={statusEnabled}
-        getSearchHaystack={haystackGetter}
-        statusKey={statusKey}
-        pageSizeOptions={pageSizeOptions}
-        filterKeys={filterKeys}
-        onRowClick={onRowClick}
-      />
+      {(DiceDataTableComponent as any)({
+        data: rows as any[],
+        columns: cols,
+        availableStatuses: availableStatuses ?? [],
+        searchEnabled,
+        statusEnabled,
+        getSearchHaystack: haystackGetter,
+        statusKey,
+        pageSizeOptions,
+        filterKeys,
+        onRowClick,
+        onFilteredDataChange,
+      })}
     </div>
   );
 }
