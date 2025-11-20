@@ -25,3 +25,17 @@ export function getTailwindPaletteClassForName(
 ): string | undefined {
   return getTailwindPaletteClass(name);
 }
+
+export function getTailwindBorderClass(value: unknown): string | undefined {
+  if (value == null) return undefined;
+  const raw = String(value).trim();
+  const v = raw.toLowerCase();
+  const BORDER: Record<string, string> = {
+    yellow: "border-[var(--yellow)]",
+    "light-green": "border-[var(--light-green)]",
+    "dark-blue": "border-[var(--dark-blue)]",
+    standard: "border-[var(--standard-white)]",
+    other: "border-[var(--other)]",
+  };
+  return BORDER[v] ?? undefined;
+}

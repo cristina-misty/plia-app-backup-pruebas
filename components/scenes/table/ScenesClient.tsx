@@ -25,10 +25,17 @@ import SmallCards from "@/components/general/small-cards";
 import { useDataTableMetricsStore } from "@/store/general/dataTableMetrics";
 import { sumScreenTime, formatHMS } from "@/lib/utils/format";
 import { EyeIcon, icons } from "lucide-react";
+import DataCards from "@/components/general/data-cards/DataCards";
+import SceneCard from "@/components/scenes/cards/SceneCard";
+import { useViewModeStore } from "@/store/general/viewMode";
 
 export default function ScenesClient() {
-  const { mode, setMode, viewTable, viewCards, viewCharts } =
-    useToggleView3("table");
+  const mode = useViewModeStore((s) => s.global ?? "table");
+  const setGlobalMode = (next: any) =>
+    useViewModeStore.getState().setGlobal(next);
+  const viewTable = mode === "table" ? "block" : "hidden";
+  const viewCards = mode === "cards" ? "block" : "hidden";
+  const viewCharts = mode === "charts" ? "block" : "hidden";
   const { series, loading, error: seriesError } = useSeries();
   const {
     scenes,
@@ -93,7 +100,7 @@ export default function ScenesClient() {
           containerClassName: "w-full",
         }}
         viewMode={mode}
-        onChangeViewMode={setMode}
+        onChangeViewMode={setGlobalMode}
         /* chartsEnabled={Boolean(chartComponent)} */
       />
       <div className="py-4">
@@ -122,6 +129,34 @@ export default function ScenesClient() {
           ]}
         />
       </div>
+
+      <DataCards
+        className={viewCards}
+        data={filtered}
+        filterKeys={[
+          {
+            id: "episode_order",
+            label: "Episode",
+            classNameTrigger: "max-w-[150px]",
+          },
+          { id: "int_ext", label: "I/E", classNameTrigger: "max-w-[150px]" },
+          { id: "day_night", label: "D/N", classNameTrigger: "max-w-[150px]" },
+          {
+            id: "length",
+            label: "Page length",
+            classNameTrigger: "max-w-[200px]",
+          },
+        ]}
+        renderItem={(item) => <SceneCard item={item} />}
+        onItemClick={(item: any) => {
+          setSelected(item);
+          const label = String(item?.scene_id ?? item?.id ?? "");
+          if (label) setDetailLabel(label);
+          const id = String(item?.scene_uuid ?? "");
+          if (id) router.push(`/scenes/${id}`);
+        }}
+        getItemBorderValue={(item: any) => item?.line_color}
+      />
 
       <DataTableRender
         className={viewTable}
