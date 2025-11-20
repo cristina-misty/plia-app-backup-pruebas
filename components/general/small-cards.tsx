@@ -10,6 +10,7 @@ type SmallCardItem = {
   value: React.ReactNode;
   icon?: ElementType | React.ReactNode;
   onClick?: () => void;
+  ariaLabel?: string;
 };
 
 type SmallCardsProps = {
@@ -44,6 +45,16 @@ export default function SmallCards({ items, className }: SmallCardsProps) {
               it.onClick && "cursor-pointer hover:bg-muted/50 transition-colors"
             )}
             onClick={it.onClick}
+            role={it.onClick ? "button" : undefined}
+            tabIndex={it.onClick ? 0 : undefined}
+            aria-label={it.ariaLabel ?? it.label}
+            onKeyDown={
+              it.onClick
+                ? (e) => {
+                    if (e.key === "Enter" || e.key === " ") it.onClick?.();
+                  }
+                : undefined
+            }
           >
             <div className="flex items-center gap-2 max-w-lg w-full">
               {iconContent}

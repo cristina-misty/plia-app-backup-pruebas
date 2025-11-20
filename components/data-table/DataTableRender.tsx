@@ -16,6 +16,7 @@ type DataTableRenderProps = {
   filterKeys?: { id: string; label: string; classNameTrigger?: string }[];
   className?: string;
   onRowClick?: (row: any) => void;
+  metricsKey?: string;
 };
 
 export default function DataTableRender({
@@ -30,6 +31,7 @@ export default function DataTableRender({
   filterKeys,
   className,
   onRowClick,
+  metricsKey,
 }: DataTableRenderProps) {
   const rows = React.useMemo(() => (Array.isArray(data) ? data : []), [data]);
   const cols = React.useMemo<ColumnDef<any, unknown>[]>(() => {
@@ -57,6 +59,7 @@ export default function DataTableRender({
         pageSizeOptions,
         filterKeys,
         onRowClick,
+        metricsKey,
       })}
     </div>
   );

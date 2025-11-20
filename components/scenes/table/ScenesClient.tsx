@@ -22,6 +22,7 @@ import { useSelectedSceneStore } from "@/store/scenes/selectedScene";
 import { useRouter } from "next/navigation";
 import { useBreadcrumbStore } from "@/store/general/breadcrumb";
 import SmallCards from "@/components/general/small-cards";
+import { useDataTableMetricsStore } from "@/store/general/dataTableMetrics";
 import { sumScreenTime, formatHMS } from "@/lib/utils/format";
 import { EyeIcon, icons } from "lucide-react";
 
@@ -50,6 +51,9 @@ export default function ScenesClient() {
   const router = useRouter();
   const setSelected = useSelectedSceneStore((s) => s.setSelected);
   const setDetailLabel = useBreadcrumbStore((s) => s.setDetailLabel);
+  const scenesCount = useDataTableMetricsStore(
+    (s) => s.counts["scenes"] ?? (Array.isArray(filtered) ? filtered.length : 0)
+  );
 
   if (scenesLoading || loading)
     return (
@@ -89,6 +93,16 @@ export default function ScenesClient() {
         onChangeViewMode={setMode}
         /* chartsEnabled={Boolean(chartComponent)} */
       />
+      <div className="py-4">
+        <SmallCards
+          items={[
+            {
+              label: "Total scenes",
+              value: scenesCount,
+            },
+          ]}
+        />
+      </div>
 
       <DataTableRender
         className={viewTable}
@@ -97,6 +111,7 @@ export default function ScenesClient() {
         availableStatuses={[]}
         statusEnabled={false}
         searchEnabled={false}
+        metricsKey="scenes"
         filterKeys={[
           {
             id: "episode_order",

@@ -37,6 +37,7 @@ import { DataTableColumnHeader } from "./DataTableColumnHeader";
 
 import { createStore } from "zustand/vanilla";
 import { useStore } from "zustand";
+import { useDataTableMetricsStore } from "@/store/general/dataTableMetrics";
 import { normalizeString, buildHaystack } from "@/lib/utils/search";
 import { DataTableToolbar } from "./DataTableToolbar";
 import { getTailwindPaletteClass } from "@/lib/utils/colors";
@@ -76,6 +77,7 @@ export function DiceDataTable<TData extends Record<string, any>>({
   pageSizeOptions,
   filterKeys,
   onRowClick,
+  metricsKey,
 }: {
   data: TData[];
   columns: ColumnDef<TData, unknown>[];
@@ -95,7 +97,9 @@ export function DiceDataTable<TData extends Record<string, any>>({
     classNameTrigger?: string;
   }[];
   onRowClick?: (item: TData) => void;
+  metricsKey?: string;
 }) {
+  const setMetricsCount = useDataTableMetricsStore((s) => s.setCount);
   const storeRef = React.useRef(
     createStore<DiceTableState>(() => ({
       title: "",
@@ -338,10 +342,17 @@ export function DiceDataTable<TData extends Record<string, any>>({
     haystacks,
   ]);
 
-  const [isFilteringSlow, setIsFilteringSlow] = React.useState(false);
+  const isFilteringSlow = filteredWithPerf.tookMs > 100;
+
+  const prevCountRef = React.useRef<number>(-1);
   React.useEffect(() => {
-    setIsFilteringSlow(filteredWithPerf.tookMs > 100);
-  }, [filteredWithPerf.tookMs]);
+    if (!metricsKey) return;
+    const next = filteredWithPerf.rows.length;
+    if (prevCountRef.current !== next) {
+      setMetricsCount(metricsKey, next);
+      prevCountRef.current = next;
+    }
+  }, [metricsKey, filteredWithPerf.rows.length, setMetricsCount]);
 
   const table = useReactTable({
     data: filteredWithPerf.rows,
