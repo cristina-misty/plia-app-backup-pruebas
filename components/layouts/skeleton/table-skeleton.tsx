@@ -3,8 +3,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 import React from "react";
 
 const TableSkeleton = () => {
+  const filterTimes = 4;
   return (
     <>
+      {/* filtros / lista skeleton */}
+      <div className="w-full flex items-center justify-start gap-2">
+        {Array.from({ length: filterTimes }).map((_, index) => (
+          <Card className="h-6 w-[100px]" key={index}>
+            <div className="h-full w-full flex items-center justify-center">
+              <Skeleton className="h-6 w-full mx-4" />
+            </div>
+          </Card>
+        ))}
+      </div>
       {/* Tabla / lista skeleton */}
       <div className="overflow-hidden rounded-md border">
         <div className="p-3">
